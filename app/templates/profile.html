@@ -1,0 +1,46 @@
+{% extends "base.html" %}
+{% block title %}Профиль | Умный гайд по страхованию{% endblock %}
+{% block content %}
+  <section class="page-hero">
+    <div class="container">
+      <p class="eyebrow">Профиль и прогресс</p>
+      <h1>Здесь видно, что ты уже понял(а) и какие памятки сохранил(а)</h1>
+      <p class="page-lead" id="profile-storage-copy">
+        {% if current_user %}
+          Прогресс и памятки сохраняются в аккаунте {{ current_user.username }}
+        {% else %}
+          Пока всё хранится только в этом браузере. Если нужен аккаунт и сохранение между устройствами, можно войти
+        {% endif %}
+      </p>
+    </div>
+  </section>
+
+  <section class="section">
+    <div class="container profile-grid" id="profile-dashboard">
+      <article class="profile-card">
+        <p class="eyebrow">Прогресс</p>
+        <h2 id="profile-progress-title">0 из {{ scenarios|length }} сценариев</h2>
+        <div class="progress-bar" aria-hidden="true">
+          <span id="profile-progress-fill"></span>
+        </div>
+        <p class="muted" id="profile-progress-copy">Начни с любого сценария, чтобы здесь появился прогресс</p>
+      </article>
+
+      <article class="profile-card">
+        <p class="eyebrow">Возрастной режим</p>
+        <h2 id="profile-age-title">Не выбран</h2>
+        <p id="profile-age-copy" class="muted">Можно выбрать в настройках доступности на любой странице</p>
+      </article>
+
+      <article class="profile-card">
+        <p class="eyebrow">Бейджи</p>
+        <div class="badge-list" id="badge-list"></div>
+      </article>
+
+      <article class="profile-card profile-card--wide">
+        <p class="eyebrow">Сохранённые памятки</p>
+        <div class="saved-list" id="saved-checklists"></div>
+      </article>
+    </div>
+  </section>
+{% endblock %}

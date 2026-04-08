@@ -1,0 +1,59 @@
+{% extends "base.html" %}
+{% block title %}Сценарии | Умный гайд по страхованию{% endblock %}
+{% block content %}
+  <section class="page-hero">
+    <div class="container">
+      <p class="eyebrow">Каталог сценариев</p>
+      <h1>Выбери ситуацию, которая похожа на твою</h1>
+      <p class="page-lead">Короткие разборы без сложных слов: что случилось, что важно проверить и куда смотреть дальше</p>
+    </div>
+  </section>
+
+  <section class="section">
+    <div class="container scenario-catalog-layout">
+      <article class="glass-card" data-scenario-slug="{{ scenario_of_day.slug }}">
+        <p class="panel-badge">Сценарий дня</p>
+        <h2>{{ scenario_of_day.title }}</h2>
+        <p data-scenario-copy>{{ scenario_of_day.card_copy|tidy_sentence }}</p>
+        <ul class="compact-list">
+          <li>⏱ {{ scenario_of_day.duration }}</li>
+          <li>Разбор по шагам</li>
+          <li>В конце памятка</li>
+        </ul>
+        <a href="{{ url_for('scenario_detail', slug=scenario_of_day.slug) }}" class="inline-link">Открыть сценарий</a>
+      </article>
+
+      <div class="catalog-toolbar">
+        <label class="search-field">
+          <span class="sr-only">Поиск сценария</span>
+          <input id="scenario-search" type="search" placeholder="Поиск по сценарию">
+        </label>
+        <div class="chip-row" id="scenario-filters">
+          <button class="chip chip--interactive is-active" type="button" data-filter="all">Все</button>
+          {% for category in scenario_categories %}
+            <button class="chip chip--interactive" type="button" data-filter="{{ category }}">{{ category }}</button>
+          {% endfor %}
+        </div>
+      </div>
+
+      <div class="scenario-grid" id="scenario-catalog">
+        {% for scenario in scenarios %}
+          <article
+            class="scenario-card"
+            data-category="{{ scenario.category }}"
+            data-title="{{ scenario.title|lower }}"
+            data-scenario-slug="{{ scenario.slug }}"
+          >
+            <div class="scenario-card__meta">
+              <span class="chip">{{ scenario.category }}</span>
+              <span class="chip">{{ scenario.duration }}</span>
+            </div>
+            <h2>{{ scenario.title }}</h2>
+            <p data-scenario-copy>{{ scenario.card_copy|tidy_sentence }}</p>
+            <a href="{{ url_for('scenario_detail', slug=scenario.slug) }}" class="primary-button">Начать</a>
+          </article>
+        {% endfor %}
+      </div>
+    </div>
+  </section>
+{% endblock %}

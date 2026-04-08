@@ -1,0 +1,111 @@
+<!doctype html>
+<html lang="ru">
+  <head>
+    <meta charset="utf-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1">
+    <title>{% block title %}Умный гайд по страхованию{% endblock %}</title>
+    <meta name="description" content="Интерактивный умный гайд по страхованию для подростков: реальные сценарии, понятные объяснения и мини-квизы.">
+    <link rel="icon" type="image/png" href="{{ url_for('static', filename='img/brand/favicon.png') }}">
+    <link rel="stylesheet" href="{{ url_for('static', filename='css/styles.css') }}">
+  </head>
+  <body data-page="{{ request.endpoint }}">
+    <div class="page-shell">
+      <header class="site-header">
+        <div class="container header-row">
+          <a href="{{ url_for('home') }}" class="brand" aria-label="Умный гайд по страхованию">
+            <span class="brand-mark">
+              <img src="{{ url_for('static', filename='img/brand/logo-icon.png') }}" alt="">
+            </span>
+            <span class="brand-copy">
+              <strong>Умный гайд</strong>
+              <small>по страхованию</small>
+            </span>
+          </a>
+          <nav class="desktop-nav" aria-label="Основная навигация">
+            {% for item in nav_items %}
+              <a class="nav-link {% if request.endpoint == item.endpoint %}is-active{% endif %}" href="{{ url_for(item.endpoint) }}">{{ item.title }}</a>
+            {% endfor %}
+          </nav>
+          <div class="header-actions">
+            <div class="accessibility-toolbar accessibility-toolbar--header">
+              <button type="button" class="accessibility-icon-button" data-action="toggle-font-size" aria-label="Крупный шрифт" title="Крупный шрифт">
+                <span class="accessibility-icon-button__icon" aria-hidden="true">A+</span>
+                <span class="sr-only">Крупный шрифт</span>
+              </button>
+              <button type="button" class="accessibility-icon-button" data-action="toggle-theme" aria-label="Тёмная тема" title="Тёмная тема">
+                <span class="accessibility-icon-button__icon" aria-hidden="true">☾</span>
+                <span class="sr-only">Тёмная тема</span>
+              </button>
+            </div>
+            <button type="button" class="age-pill age-pill--interactive" id="age-pill" data-action="open-age-modal" aria-label="Возрастной режим">
+              <span class="age-pill__avatar" aria-hidden="true">
+                <img src="{{ url_for('static', filename='img/age_modes/11-13/avatar.png') }}" alt="">
+              </span>
+              <span class="age-pill__copy">
+                <strong>Возраст</strong>
+                <span>Выбрать режим</span>
+              </span>
+            </button>
+            {% if current_user %}
+              <div class="account-chip">
+                <a href="{{ url_for('profile') }}" class="account-chip__link">{{ current_user.username }}</a>
+                <form method="post" action="{{ url_for('logout') }}">
+                  <button type="submit" class="account-chip__logout">Выйти</button>
+                </form>
+              </div>
+            {% else %}
+              <a href="{{ url_for('auth') }}" class="nav-link nav-link--button">Войти</a>
+            {% endif %}
+          </div>
+        </div>
+      </header>
+
+      <main>
+        {% block content %}{% endblock %}
+      </main>
+
+      <nav class="mobile-nav" aria-label="Нижняя навигация">
+        <a href="{{ url_for('scenarios') }}" class="mobile-nav__item {% if request.endpoint in ['scenarios', 'scenario_detail'] %}is-active{% endif %}">Сценарии</a>
+        <a href="{{ url_for('basics') }}" class="mobile-nav__item {% if request.endpoint == 'basics' %}is-active{% endif %}">Основы</a>
+        <a href="{{ url_for('glossary') }}" class="mobile-nav__item {% if request.endpoint == 'glossary' %}is-active{% endif %}">Словарь</a>
+        <a href="{{ url_for('profile') }}" class="mobile-nav__item {% if request.endpoint == 'profile' %}is-active{% endif %}">Профиль</a>
+      </nav>
+    </div>
+
+    <dialog class="age-modal" id="age-modal">
+      <form method="dialog" class="age-modal__card">
+        <h2>Выбери возрастной режим</h2>
+        <div class="age-options">
+          {% for segment in age_segments %}
+            <button type="button" class="age-option" data-age-segment="{{ segment.id }}">
+              <span class="age-option__media">
+                <img src="{{ url_for('static', filename=segment.avatar) }}" alt="">
+              </span>
+              <span class="age-option__copy">
+                <strong>{{ segment.title }}</strong>
+                <span>{{ segment.tone|tidy_sentence }}</span>
+              </span>
+            </button>
+          {% endfor %}
+        </div>
+        <div class="dialog-actions">
+          <button type="button" class="secondary-button" data-action="skip-age-selection">Пропустить</button>
+          <button type="button" class="primary-button" data-action="close-age-modal">Позже</button>
+        </div>
+      </form>
+    </dialog>
+
+    <script>
+      window.APP_BOOTSTRAP = {
+        ageSegments: {{ age_segments|tojson }},
+        scenarios: {{ scenarios|default([])|tojson }},
+        basicsModules: {{ basics_modules|default([])|tojson }},
+        auth: {
+          authenticated: {{ (current_user is not none)|tojson }},
+          username: {{ current_user.username|tojson if current_user else 'null' }}
+        }
+      };
+    </script>
+    <script src="{{ url_for('static', filename='js/main.js') }}" defer></script>
+  </body>
+</html>

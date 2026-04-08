@@ -1,0 +1,5 @@
+*.pdf
+.venv
+__pycache__
+IMAGE_BRIEF_CHARACTERS.md
+.DS_Store

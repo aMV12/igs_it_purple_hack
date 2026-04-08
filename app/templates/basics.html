@@ -1,0 +1,54 @@
+{% extends "base.html" %}
+{% block title %}Основы | Умный гайд по страхованию{% endblock %}
+{% block content %}
+  <section class="page-hero">
+    <div class="container">
+      <p class="eyebrow">Основы страхования</p>
+      <h1>Основы без занудства</h1>
+      <p class="page-lead">Открой модуль и разберись на своём уровне</p>
+    </div>
+  </section>
+
+  <section class="section">
+    <div class="container basics-hub">
+      <div class="basics-hero-card">
+        <div class="basics-hero-card__copy">
+          <p class="eyebrow" id="basics-hero-eyebrow">Режим 11–13 лет</p>
+          <h2 id="basics-hero-title">Лёва объясняет коротко и понятно</h2>
+          <p id="basics-hero-copy">Короткие истории, понятные сравнения и минимум сложных слов</p>
+        </div>
+        <div class="basics-hero-card__media">
+          <img id="basics-hero-avatar" src="{{ url_for('static', filename='img/age_modes/11-13/avatar.png') }}" alt="Аватар возрастного режима">
+        </div>
+      </div>
+
+      <div class="basics-stack">
+      {% for module in basics_modules %}
+        <article class="module-card" data-module-id="{{ module.id }}">
+          <div class="module-card__header">
+            <p class="eyebrow">Модуль {{ loop.index }}</p>
+            <h2>{{ module.title }}</h2>
+          </div>
+          <p>{{ module.summary|tidy_sentence }}</p>
+          <div class="chip-row">
+            {% for point in module.card_points %}
+              <span class="chip">{{ point }}</span>
+            {% endfor %}
+          </div>
+          <div class="tip-box">
+            <strong>{{ module.hook }}</strong>
+            <span>{{ module.tip|tidy_sentence }}</span>
+          </div>
+          <div class="action-row">
+            <button type="button" class="primary-button" data-action="open-basics-modal" data-module-id="{{ module.id }}">Открыть</button>
+          </div>
+        </article>
+      {% endfor %}
+      </div>
+    </div>
+  </section>
+
+  <dialog class="basics-modal" id="basics-modal">
+    <div class="basics-modal__card" id="basics-modal-content"></div>
+  </dialog>
+{% endblock %}

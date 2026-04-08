@@ -1,0 +1,76 @@
+{% extends "base.html" %}
+{% block title %}Вход | Умный гайд по страхованию{% endblock %}
+{% block content %}
+  <section class="page-hero">
+    <div class="container">
+      <p class="eyebrow">Аккаунт</p>
+      <h1>Войти или создать профиль</h1>
+      <p class="page-lead">Аккаунт нужен, чтобы памятки и прогресс сохранялись в профиле, а не только в одном браузере</p>
+    </div>
+  </section>
+
+  <section class="section">
+    <div class="container auth-single-layout">
+      <article class="profile-card auth-card">
+        <div class="auth-switch" role="tablist" aria-label="Переключение между входом и регистрацией">
+          <a
+            href="{{ url_for('auth', mode='login') }}"
+            class="auth-switch__tab {% if auth_mode != 'register' %}is-active{% endif %}"
+            role="tab"
+            aria-selected="{% if auth_mode != 'register' %}true{% else %}false{% endif %}"
+          >
+            Вход
+          </a>
+          <a
+            href="{{ url_for('auth', mode='register') }}"
+            class="auth-switch__tab {% if auth_mode == 'register' %}is-active{% endif %}"
+            role="tab"
+            aria-selected="{% if auth_mode == 'register' %}true{% else %}false{% endif %}"
+          >
+            Регистрация
+          </a>
+        </div>
+
+        {% if auth_mode == 'register' %}
+          <p class="eyebrow">Регистрация</p>
+          <h2>Создай новый аккаунт</h2>
+          <p class="muted">Придумай логин и пароль, чтобы сохранить свой прогресс и памятки</p>
+          {% if error %}
+            <div class="info-strip info-strip--strong">{{ error }}</div>
+          {% endif %}
+          <form method="post" class="auth-form">
+            <input type="hidden" name="mode" value="register">
+            <label class="auth-field">
+              <span>Логин</span>
+              <input type="text" name="username" required minlength="3" maxlength="32">
+            </label>
+            <label class="auth-field">
+              <span>Пароль</span>
+              <input type="password" name="password" required minlength="4">
+            </label>
+            <button type="submit" class="primary-button">Создать аккаунт</button>
+          </form>
+        {% else %}
+          <p class="eyebrow">Вход</p>
+          <h2>Войди в свой аккаунт</h2>
+          <p class="muted">После входа твои памятки и прогресс будут подгружаться из профиля</p>
+          {% if error %}
+            <div class="info-strip info-strip--strong">{{ error }}</div>
+          {% endif %}
+          <form method="post" class="auth-form">
+            <input type="hidden" name="mode" value="login">
+            <label class="auth-field">
+              <span>Логин</span>
+              <input type="text" name="username" required minlength="3" maxlength="32">
+            </label>
+            <label class="auth-field">
+              <span>Пароль</span>
+              <input type="password" name="password" required minlength="4">
+            </label>
+            <button type="submit" class="primary-button">Войти</button>
+          </form>
+        {% endif %}
+      </article>
+    </div>
+  </section>
+{% endblock %}

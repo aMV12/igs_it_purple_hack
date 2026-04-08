@@ -1,0 +1,41 @@
+{% extends "base.html" %}
+{% block title %}Словарь | Умный гайд по страхованию{% endblock %}
+{% block content %}
+  <section class="page-hero">
+    <div class="container">
+      <p class="eyebrow">Словарь</p>
+      <h1>Слова, которые правда пригодятся</h1>
+      <p class="page-lead">Коротко и по-человечески: что значит слово и где ты встретишь его в жизни</p>
+    </div>
+  </section>
+
+  <section class="section">
+    <div class="container">
+      <label class="search-field">
+        <span class="sr-only">Поиск термина</span>
+        <input id="glossary-search" type="search" placeholder="Поиск по термину">
+      </label>
+      <div class="glossary-grid" id="glossary-grid">
+        {% for item in glossary %}
+          <article class="glossary-card" data-term="{{ item.term|lower }}" data-glossary-id="{{ item.id }}">
+            <h2>{{ item.term }}</h2>
+            <p data-glossary-definition>{{ item.definition|tidy_sentence }}</p>
+            <div class="tip-box">
+              <strong data-glossary-example-title>Пример из жизни</strong>
+              <span data-glossary-example>{{ item.example|tidy_sentence }}</span>
+            </div>
+            <div class="glossary-links">
+              {% for slug in item.scenario_slugs %}
+                {% set linked_scenario = (scenarios | selectattr('slug', 'equalto', slug) | list | first) %}
+                {% if linked_scenario %}
+                  <a class="chip chip--interactive" href="{{ url_for('scenario_detail', slug=linked_scenario.slug) }}">{{ linked_scenario.title }}</a>
+                {% endif %}
+              {% endfor %}
+            </div>
+          </article>
+        {% endfor %}
+      </div>
+    </div>
+  </section>
+  <script id="glossary-page-data" type="application/json">{{ glossary|tojson }}</script>
+{% endblock %}

@@ -1,0 +1,94 @@
+{% extends "base.html" %}
+{% block title %}Главная | Умный гайд по страхованию{% endblock %}
+{% block content %}
+  <section class="hero">
+    <div class="container hero-grid hero-grid--centered">
+      <div class="hero-copy">
+        <p class="eyebrow">Интерактивный «умный гайд»</p>
+        <h1>Понять, где страховка правда может помочь</h1>
+        <p class="hero-text" id="hero-text">Берём обычные ситуации из жизни и спокойно разбираем, что произошло, на что смотреть и что делать дальше</p>
+        <div class="hero-actions">
+          <a href="{{ url_for('scenarios') }}" class="primary-button">Выбрать ситуацию из жизни</a>
+          <a href="{{ url_for('basics') }}" class="secondary-button">Быстро понять основу</a>
+        </div>
+        <div class="hero-metrics">
+          <div class="metric-card">
+            <strong>9</strong>
+            <span>сценариев</span>
+          </div>
+          <div class="metric-card">
+            <strong>3–5</strong>
+            <span>вопросов в квизе</span>
+          </div>
+          <div class="metric-card">
+            <strong>0</strong>
+            <span>лишних персональных данных</span>
+          </div>
+        </div>
+      </div>
+    </div>
+  </section>
+
+  <section class="section">
+    <div class="container two-column">
+      <article class="spotlight-card">
+        <p class="eyebrow">Почему так</p>
+        <h2>Разбираем на понятных примерах</h2>
+        <p>Так легче увидеть разницу между просто неприятностью и случаем, где правда стоит открыть полис</p>
+      </article>
+      <article class="spotlight-card accent" data-scenario-slug="{{ featured_scenario.slug }}">
+        <p class="eyebrow">Быстрый старт</p>
+        <h2>{{ featured_scenario.title }}</h2>
+        <p data-scenario-copy>{{ featured_scenario.card_copy|tidy_sentence }}</p>
+        <a href="{{ url_for('scenario_detail', slug=featured_scenario.slug) }}" class="primary-button">Начать с самого быстрого сценария</a>
+      </article>
+    </div>
+  </section>
+
+  <section class="section">
+    <div class="container">
+      <div class="section-heading">
+        <div>
+          <p class="eyebrow">Сценарии</p>
+          <h2>Ситуации, которые правда могут случиться</h2>
+        </div>
+        <a href="{{ url_for('scenarios') }}" class="inline-link">Смотреть все сценарии</a>
+      </div>
+      <div class="scenario-grid">
+        {% for scenario in scenarios[:3] %}
+          <article class="scenario-card" data-scenario-slug="{{ scenario.slug }}">
+            <div class="scenario-card__meta">
+              <span class="chip">{{ scenario.category }}</span>
+              <span class="chip">{{ scenario.duration }}</span>
+              {% if scenario.popular %}
+                <span class="chip chip--accent">Популярно</span>
+              {% endif %}
+            </div>
+            <h3>{{ scenario.title }}</h3>
+            <p data-scenario-copy>{{ scenario.card_copy|tidy_sentence }}</p>
+            <a href="{{ url_for('scenario_detail', slug=scenario.slug) }}" class="card-link">Открыть</a>
+          </article>
+        {% endfor %}
+      </div>
+    </div>
+  </section>
+
+  <section class="section section--soft">
+    <div class="container">
+      <div class="section-heading">
+        <div>
+          <p class="eyebrow">Основы</p>
+          <h2>Короткая база, если хочется сначала понять, как всё устроено</h2>
+        </div>
+      </div>
+      <div class="basics-grid">
+        {% for module in basics_modules %}
+          <article class="info-card">
+            <h3>{{ module.title }}</h3>
+            <p>{{ module.summary|tidy_sentence }}</p>
+          </article>
+        {% endfor %}
+      </div>
+    </div>
+  </section>
+{% endblock %}

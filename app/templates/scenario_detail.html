@@ -1,0 +1,57 @@
+{% extends "base.html" %}
+{% block title %}{{ scenario.title }} | Умный гайд по страхованию{% endblock %}
+{% block content %}
+  <section class="page-hero">
+    <div class="container">
+      <a href="{{ url_for('scenarios') }}" class="inline-link">← Назад к сценариям</a>
+      <p class="eyebrow">{{ scenario.category }} · {{ scenario.duration }}</p>
+      <h1>{{ scenario.title }}</h1>
+      <p class="page-lead" id="scenario-page-lead">{{ scenario.intro|tidy_sentence }}</p>
+    </div>
+  </section>
+
+  <section class="section scenario-layout" data-scenario-root>
+    <div class="container scenario-layout__grid">
+      <div class="scenario-main">
+        <article class="story-card story-card--spacious" id="scenario-intro-card">
+          <h2 id="scenario-intro-title">Что случилось</h2>
+          <p id="scenario-intro-copy">{{ scenario.intro|tidy_sentence }}</p>
+          <div class="info-strip info-strip--strong">
+            <strong id="scenario-prep-title">Перед стартом</strong>
+            <span id="scenario-prep-copy">{{ scenario.prep_hint|tidy_sentence }}</span>
+          </div>
+          <div class="action-row action-row--spacious">
+            <button type="button" class="primary-button" id="start-scenario">Начать разбор</button>
+            <a href="{{ url_for('glossary') }}" class="secondary-button">Открыть словарь</a>
+          </div>
+        </article>
+
+        <div id="scenario-app" hidden></div>
+      </div>
+
+      <aside class="scenario-side">
+        <article class="side-card">
+          <p class="eyebrow">Что ты поймёшь</p>
+          <h2 id="scenario-goal-copy">{{ scenario.goal|tidy_sentence }}</h2>
+          <div class="progress-stack">
+            <div class="progress-header">
+              <span>Прогресс сценария</span>
+              <span id="scenario-progress-label">Шаг 0 из {{ scenario.steps|length }}</span>
+            </div>
+            <div class="progress-bar" aria-hidden="true">
+              <span id="scenario-progress-fill"></span>
+            </div>
+          </div>
+        </article>
+
+        <article class="side-card" id="term-hint-card">
+          <h2>Подсказка по термину</h2>
+          <p class="muted">После первого ответа здесь появится короткое и понятное объяснение</p>
+        </article>
+      </aside>
+    </div>
+  </section>
+
+  <script id="scenario-data" type="application/json">{{ scenario|tojson }}</script>
+  <script id="glossary-data" type="application/json">{{ glossary|tojson }}</script>
+{% endblock %}

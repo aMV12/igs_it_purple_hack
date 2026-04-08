@@ -1,0 +1,55 @@
+{% extends "base.html" %}
+{% block title %}О проекте | Умный гайд по страхованию{% endblock %}
+{% block content %}
+  <section class="page-hero">
+    <div class="container">
+      <p class="eyebrow">О проекте</p>
+      <h1>Коротко о гайде</h1>
+      <p class="page-lead">Гайд помогает спокойно разбирать страховые ситуации на реальных примерах и понимать, на что смотреть в условиях.</p>
+    </div>
+  </section>
+
+  <section class="section">
+    <div class="container about-grid">
+      <article class="info-card">
+        <h2>Что здесь можно сделать</h2>
+        <ul class="bullet-list">
+          <li>{{ "Пройти жизненный сценарий и быстро понять логику ситуации"|tidy_sentence }}</li>
+          <li>{{ "Открыть основы и разобраться в терминах на своём уровне"|tidy_sentence }}</li>
+          <li>{{ "Сохранить памятку и вернуться к ней позже"|tidy_sentence }}</li>
+        </ul>
+      </article>
+
+      <article class="info-card">
+        <h2>Как устроена подача</h2>
+        <ul class="bullet-list">
+          <li>{{ "Понятный язык без перегруза и канцелярита"|tidy_sentence }}</li>
+          <li>{{ "Разные режимы по возрасту: от простых сценок до проверки условий"|tidy_sentence }}</li>
+          <li>{{ "Локальный прогресс хранится только в браузере"|tidy_sentence }}</li>
+        </ul>
+      </article>
+    </div>
+  </section>
+
+  <section class="section">
+    <div class="container">
+      <div class="section-heading">
+        <div>
+          <p class="eyebrow">Источники</p>
+          <h2>На что опирается контент</h2>
+        </div>
+      </div>
+      <div class="basics-grid">
+        {% for source in sources %}
+          <article class="info-card">
+            <h3>{{ source.title }}</h3>
+            <p>{{ source.description|tidy_sentence }}</p>
+            {% if source.url %}
+              <a class="inline-link" href="{{ source.url }}" target="_blank" rel="noreferrer">Открыть источник</a>
+            {% endif %}
+          </article>
+        {% endfor %}
+      </div>
+    </div>
+  </section>
+{% endblock %}
