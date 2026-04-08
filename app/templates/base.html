@@ -67,6 +67,7 @@
       <nav class="mobile-nav" aria-label="Нижняя навигация">
         <a href="{{ url_for('scenarios') }}" class="mobile-nav__item {% if request.endpoint in ['scenarios', 'scenario_detail'] %}is-active{% endif %}">Сценарии</a>
         <a href="{{ url_for('basics') }}" class="mobile-nav__item {% if request.endpoint == 'basics' %}is-active{% endif %}">Основы</a>
+        <a href="{{ url_for('games') }}" class="mobile-nav__item {% if request.endpoint == 'games' %}is-active{% endif %}">Игры</a>
         <a href="{{ url_for('glossary') }}" class="mobile-nav__item {% if request.endpoint == 'glossary' %}is-active{% endif %}">Словарь</a>
         <a href="{{ url_for('profile') }}" class="mobile-nav__item {% if request.endpoint == 'profile' %}is-active{% endif %}">Профиль</a>
       </nav>
@@ -100,6 +101,7 @@
         ageSegments: {{ age_segments|tojson }},
         scenarios: {{ scenarios|default([])|tojson }},
         basicsModules: {{ basics_modules|default([])|tojson }},
+        gameModes: {{ game_modes|default([])|tojson }},
         auth: {
           authenticated: {{ (current_user is not none)|tojson }},
           username: {{ current_user.username|tojson if current_user else 'null' }}

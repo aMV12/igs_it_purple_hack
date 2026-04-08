@@ -1,0 +1,70 @@
+{% extends "base.html" %}
+{% block title %}Игры | Умный гайд по страхованию{% endblock %}
+{% block content %}
+  <section class="page-hero">
+    <div class="container">
+      <p class="eyebrow">Игровой режим</p>
+      <h1>Потренироваться на короткой игре и быстрее запомнить логику</h1>
+      <p class="page-lead" id="games-hero-copy">Откроется игра под твой возрастной режим: без тяжёлых правил, но с реальными ситуациями из жизни</p>
+    </div>
+  </section>
+
+  <section class="section">
+    <div class="container games-layout" id="games-layout">
+      <div class="games-main">
+        <article class="glass-card active-game-card" id="active-game-card">
+          <p class="panel-badge" id="active-game-badge">Сейчас открыт игровой режим</p>
+          <div class="active-game-card__head">
+            <div class="active-game-card__avatar">
+              <img id="active-game-avatar" src="{{ url_for('static', filename='img/age_modes/11-13/avatar.png') }}" alt="">
+            </div>
+            <div>
+              <h2 id="active-game-title">Игра загружается</h2>
+              <p class="muted" id="active-game-summary">Сейчас подберём механику под выбранный возраст</p>
+            </div>
+          </div>
+          <div class="active-game-card__facts">
+            <div class="fact-chip">
+              <strong>Что тренируем</strong>
+              <span id="active-game-focus">Логику страхования без перегруза</span>
+            </div>
+            <div class="fact-chip">
+              <strong>Лучший результат</strong>
+              <span id="active-game-score">Пока пусто</span>
+            </div>
+            <div class="fact-chip">
+              <strong>Что делать</strong>
+              <span id="active-game-how">Сейчас подберём короткое описание правил</span>
+            </div>
+            <div class="fact-chip">
+              <strong>Пример</strong>
+              <span id="active-game-example">Сейчас подберём короткий пример</span>
+            </div>
+          </div>
+          <p class="active-game-card__copy" id="active-game-copy">Внутри будет короткая игра с быстрым фидбэком и понятным разбором</p>
+          <div class="action-row">
+            <button type="button" class="primary-button" id="start-game-button">Начать игру</button>
+            <button type="button" class="secondary-button" id="restart-game-button">Сыграть заново</button>
+          </div>
+        </article>
+
+        <section class="game-shell" id="games-app" hidden></section>
+      </div>
+
+      <aside class="games-sidebar">
+        <article class="side-card">
+          <p class="eyebrow">Какие игры есть</p>
+          <div class="game-preview-list">
+            {% for game in game_modes %}
+              <article class="game-preview-card" data-game-preview="{{ game.age_segment }}">
+                <strong>{{ game.preview_title }}</strong>
+                <h3>{{ game.title }}</h3>
+                <p>{{ game.summary|tidy_sentence }}</p>
+              </article>
+            {% endfor %}
+          </div>
+        </article>
+      </aside>
+    </div>
+  </section>
+{% endblock %}

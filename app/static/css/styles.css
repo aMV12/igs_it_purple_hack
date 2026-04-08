@@ -153,9 +153,9 @@ input:focus-visible {
 }
 
 .header-row {
-  display: flex;
+  display: grid;
+  grid-template-columns: auto minmax(0, 1fr) auto;
   align-items: center;
-  justify-content: space-between;
   gap: 16px;
   min-height: 76px;
 }
@@ -202,13 +202,18 @@ input:focus-visible {
   display: flex;
   align-items: center;
   gap: 8px;
+  justify-content: center;
+  flex-wrap: nowrap;
+  min-width: 0;
 }
 
 .header-actions {
   display: flex;
   align-items: center;
   gap: 8px;
-  flex-wrap: wrap;
+  flex-wrap: nowrap;
+  justify-content: flex-end;
+  min-width: 0;
 }
 
 .age-pill {
@@ -275,6 +280,7 @@ input:focus-visible {
   border-radius: 999px;
   color: var(--text-secondary);
   font-weight: 700;
+  white-space: nowrap;
 }
 
 .nav-link.is-active,
@@ -475,6 +481,7 @@ input:focus-visible {
   border: 1px solid var(--border);
   border-radius: 999px;
   background: var(--surface);
+  white-space: nowrap;
 }
 
 .account-chip__link,
@@ -1408,16 +1415,248 @@ body.is-dark-theme .auth-switch__tab.is-active {
   padding: 20px;
 }
 
+.games-layout {
+  display: grid;
+  grid-template-columns: minmax(0, 1.1fr) minmax(280px, 0.55fr);
+  gap: 20px;
+  align-items: start;
+}
+
+.games-layout.is-playing {
+  grid-template-columns: 1fr;
+}
+
+.games-layout.is-playing .games-sidebar {
+  display: none;
+}
+
+.games-main {
+  display: grid;
+  gap: 18px;
+}
+
+.active-game-card__head {
+  display: grid;
+  grid-template-columns: 92px minmax(0, 1fr);
+  gap: 16px;
+  align-items: center;
+}
+
+.active-game-card__head h2 {
+  margin: 0 0 8px;
+}
+
+.active-game-card__avatar {
+  width: 92px;
+  height: 92px;
+  border-radius: 24px;
+  overflow: hidden;
+  background: radial-gradient(circle, rgba(29, 78, 216, 0.1), rgba(154, 52, 18, 0.08));
+  border: 1px solid var(--card-border);
+}
+
+.active-game-card__avatar img {
+  width: 100%;
+  height: 100%;
+  object-fit: cover;
+  object-position: center top;
+}
+
+.active-game-card__facts,
+.fact-list {
+  display: grid;
+  gap: 14px;
+  margin-top: 18px;
+}
+
+.fact-list {
+  margin-top: 0;
+}
+
+.active-game-card__facts {
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+}
+
+.fact-chip,
+.fact-line {
+  display: grid;
+  gap: 4px;
+  padding: 14px 16px;
+  border-radius: 18px;
+  background: var(--surface-muted);
+  border: 1px solid var(--card-border);
+}
+
+.fact-chip strong,
+.fact-line strong {
+  font-size: 0.86rem;
+}
+
+.fact-chip span,
+.fact-line span {
+  color: var(--text-secondary);
+  line-height: 1.6;
+}
+
+.active-game-card__copy {
+  margin: 20px 0 0;
+  line-height: 1.7;
+}
+
+.game-shell {
+  display: grid;
+  gap: 16px;
+}
+
+.game-shell[hidden] {
+  display: none;
+}
+
+.games-sidebar {
+  display: grid;
+}
+
+.game-preview-list {
+  display: grid;
+  gap: 14px;
+}
+
+.game-preview-card {
+  padding: 18px;
+  border-radius: 20px;
+  border: 1px solid var(--card-border);
+  background: var(--surface);
+  transition:
+    border-color 0.18s ease,
+    transform 0.18s ease,
+    box-shadow 0.18s ease;
+}
+
+.game-preview-card.is-active {
+  border-color: rgba(29, 78, 216, 0.42);
+  box-shadow: 0 14px 28px rgba(29, 78, 216, 0.12);
+  transform: translateY(-1px);
+}
+
+.game-preview-card strong {
+  display: block;
+  margin-bottom: 8px;
+  color: var(--primary);
+  font-size: 0.84rem;
+}
+
+.game-preview-card h3 {
+  margin: 0 0 10px;
+  font-size: 1.15rem;
+}
+
+.game-preview-card p {
+  margin: 0;
+  color: var(--text-secondary);
+}
+
+.game-option-grid {
+  display: grid;
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+  gap: 12px;
+  margin-top: 18px;
+}
+
+.game-option-card,
+.game-classify-button {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  min-height: 76px;
+  padding: 14px 16px;
+  border-radius: 20px;
+  border: 1px solid var(--card-border);
+  background: var(--surface);
+  color: var(--text-primary);
+  font-weight: 700;
+  text-align: center;
+  cursor: pointer;
+  transition:
+    transform 0.18s ease,
+    border-color 0.18s ease,
+    background-color 0.18s ease,
+    box-shadow 0.18s ease;
+}
+
+.game-option-card:hover,
+.game-classify-button:hover {
+  transform: translateY(-1px);
+}
+
+.game-option-card.is-selected,
+.game-classify-button.is-selected {
+  border-color: rgba(29, 78, 216, 0.44);
+  background: rgba(29, 78, 216, 0.08);
+}
+
+.game-classify-button.is-correct {
+  border-color: rgba(22, 101, 52, 0.34);
+  background: rgba(22, 101, 52, 0.1);
+}
+
+.game-classify-actions {
+  display: grid;
+  grid-template-columns: repeat(3, minmax(0, 1fr));
+  gap: 12px;
+  margin-top: 18px;
+}
+
+.game-result-card h2 {
+  font-size: 2rem;
+}
+
+.scenario-feedback__details {
+  margin-top: 10px;
+}
+
+@media (max-width: 1320px) {
+  .brand-copy small {
+    display: none;
+  }
+
+  .nav-link {
+    padding: 10px 12px;
+    font-size: 0.96rem;
+  }
+
+  .age-pill {
+    min-height: 44px;
+    padding: 6px 10px 6px 8px;
+  }
+
+  .age-pill__copy strong {
+    font-size: 0.8rem;
+  }
+}
+
 @media (max-width: 1023px) {
   .hero-grid,
   .two-column,
   .about-grid,
   .auth-layout,
+  .games-layout,
   .scenario-layout__grid,
   .profile-grid,
   .basics-hero-card,
   .basics-modal__grid,
   .basics-modal__hero {
+    grid-template-columns: 1fr;
+  }
+
+  .header-row {
+    display: flex;
+  }
+
+  .header-actions {
+    flex-wrap: wrap;
+  }
+
+  .active-game-card__facts {
     grid-template-columns: 1fr;
   }
 
@@ -1459,6 +1698,8 @@ body.is-dark-theme .auth-switch__tab.is-active {
   .scenario-grid,
   .basics-grid,
   .glossary-grid,
+  .game-option-grid,
+  .game-classify-actions,
   .age-options,
   .result-grid,
   .myth-grid {
@@ -1475,7 +1716,8 @@ body.is-dark-theme .auth-switch__tab.is-active {
   .profile-card,
   .side-card,
   .story-card,
-  .quiz-card {
+  .quiz-card,
+  .game-preview-card {
     padding: 20px;
   }
 

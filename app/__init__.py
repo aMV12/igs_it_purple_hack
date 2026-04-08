@@ -5,7 +5,7 @@ import re
 from flask import Flask, abort, jsonify, redirect, render_template, request, session, url_for
 from werkzeug.security import check_password_hash, generate_password_hash
 
-from app.content.data import ABOUT_SOURCES, AGE_SEGMENTS, BASICS_MODULES, GLOSSARY, SCENARIOS
+from app.content.data import ABOUT_SOURCES, AGE_SEGMENTS, BASICS_MODULES, GAME_MODES, GLOSSARY, SCENARIOS
 from app.extensions import db
 from app.models import User
 
@@ -40,7 +40,7 @@ def create_app() -> Flask:
     def is_meaningful_progress(progress: dict) -> bool:
         if not isinstance(progress, dict):
             return False
-        return bool(progress.get("completedScenarios") or progress.get("quizScores") or progress.get("badges"))
+        return bool(progress.get("completedScenarios") or progress.get("quizScores") or progress.get("badges") or progress.get("gameResults"))
 
     @flask_app.template_filter("tidy_sentence")
     def tidy_sentence(value: str) -> str:
@@ -61,6 +61,7 @@ def create_app() -> Flask:
             "nav_items": [
                 {"title": "Сценарии", "endpoint": "scenarios"},
                 {"title": "Основы", "endpoint": "basics"},
+                {"title": "Игры", "endpoint": "games"},
                 {"title": "Словарь", "endpoint": "glossary"},
                 {"title": "Профиль", "endpoint": "profile"},
                 {"title": "О проекте", "endpoint": "about"},
@@ -103,6 +104,10 @@ def create_app() -> Flask:
     @flask_app.route("/glossary")
     def glossary():
         return render_template("glossary.html", glossary=GLOSSARY, scenarios=SCENARIOS)
+
+    @flask_app.route("/games")
+    def games():
+        return render_template("games.html", game_modes=GAME_MODES, scenarios=SCENARIOS)
 
     @flask_app.route("/profile")
     def profile():

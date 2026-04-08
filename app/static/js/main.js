@@ -11,6 +11,7 @@
     completedScenarios: {},
     quizScores: {},
     badges: [],
+    gameResults: {},
   };
 
   let remoteAuthState = getBootstrap().auth || { authenticated: false, username: null };
@@ -47,7 +48,25 @@
   }
 
   function hasMeaningfulProgress(progress) {
-    return Boolean(progress && (Object.keys(progress.completedScenarios || {}).length || Object.keys(progress.quizScores || {}).length || (progress.badges || []).length));
+    return Boolean(
+      progress &&
+        (
+          Object.keys(progress.completedScenarios || {}).length ||
+          Object.keys(progress.quizScores || {}).length ||
+          (progress.badges || []).length ||
+          Object.keys(progress.gameResults || {}).length
+        ),
+    );
+  }
+
+  function normalizeProgress(progress) {
+    const value = progress && typeof progress === "object" ? progress : {};
+    return {
+      completedScenarios: value.completedScenarios && typeof value.completedScenarios === "object" ? value.completedScenarios : {},
+      quizScores: value.quizScores && typeof value.quizScores === "object" ? value.quizScores : {},
+      badges: Array.isArray(value.badges) ? value.badges : [],
+      gameResults: value.gameResults && typeof value.gameResults === "object" ? value.gameResults : {},
+    };
   }
 
   function hasMeaningfulSettings(settings) {
@@ -104,7 +123,7 @@
 
       const mergedAge = remoteHasAge ? data.ageSegment : localAge;
       const mergedSettings = remoteHasSettings ? data.settings : localSettings;
-      const mergedProgress = remoteHasProgress ? data.progress : defaultProgress;
+      const mergedProgress = remoteHasProgress ? normalizeProgress(data.progress) : normalizeProgress(defaultProgress);
       const mergedChecklists = remoteHasChecklists ? data.checklists : [];
 
       hydrateLocalStateFromRemote({
@@ -178,12 +197,13 @@
   }
 
   function getProgress() {
-    return safeJsonParse(localStorage.getItem(storageKeys.progress), defaultProgress);
+    return normalizeProgress(safeJsonParse(localStorage.getItem(storageKeys.progress), defaultProgress));
   }
 
   function saveProgress(progress) {
-    localStorage.setItem(storageKeys.progress, JSON.stringify(progress));
-    void persistRemoteState({ progress });
+    const normalized = normalizeProgress(progress);
+    localStorage.setItem(storageKeys.progress, JSON.stringify(normalized));
+    void persistRemoteState({ progress: normalized });
   }
 
   function getSavedChecklists() {
@@ -210,6 +230,7 @@
 
   function calculateBadges(progress) {
     const completed = Object.keys(progress.completedScenarios || {});
+    const gameResults = Object.values(progress.gameResults || {});
     const badges = [];
     if (completed.length >= 1) {
       badges.push("Я знаю разницу между риском и случаем");
@@ -225,6 +246,12 @@
     }
     if (Object.values(progress.quizScores || {}).some((score) => score >= 3)) {
       badges.push("Квиз пройден уверенно");
+    }
+    if (gameResults.length >= 1) {
+      badges.push("Я тренирую страховую логику через игры");
+    }
+    if (gameResults.some((item) => item.bestScore >= item.total && item.total > 0)) {
+      badges.push("Есть идеальная игра без ошибок");
     }
     progress.badges = badges;
     saveProgress(progress);
@@ -966,6 +993,363 @@
     document.addEventListener("igs:age-changed", updateScenarioIntroCard);
   }
 
+  function initGamesMode() {
+    if (document.body.dataset.page !== "games") return;
+
+    const layoutNode = document.getElementById("games-layout");
+    const cardNode = document.getElementById("active-game-card");
+    const appNode = document.getElementById("games-app");
+    const startButton = document.getElementById("start-game-button");
+    const restartButton = document.getElementById("restart-game-button");
+    const heroCopy = document.getElementById("games-hero-copy");
+    const badgeNode = document.getElementById("active-game-badge");
+    const titleNode = document.getElementById("active-game-title");
+    const summaryNode = document.getElementById("active-game-summary");
+    const focusNode = document.getElementById("active-game-focus");
+    const scoreNode = document.getElementById("active-game-score");
+    const copyNode = document.getElementById("active-game-copy");
+    const howNode = document.getElementById("active-game-how");
+    const exampleNode = document.getElementById("active-game-example");
+    const avatarNode = document.getElementById("active-game-avatar");
+    const previews = Array.from(document.querySelectorAll("[data-game-preview]"));
+    const { gameModes } = getBootstrap();
+
+    if (!appNode || !startButton || !restartButton || !gameModes?.length || !layoutNode || !cardNode) return;
+
+    const state = {
+      started: false,
+      score: 0,
+      index: 0,
+      selections: [],
+      pool: [],
+      locked: false,
+    };
+
+    function getActiveGame() {
+      const activeAge = getAgeSegment() || "11-13";
+      return gameModes.find((item) => item.age_segment === activeAge) || gameModes[0];
+    }
+
+    function getBestGameScore(game) {
+      const progress = getProgress();
+      const record = progress.gameResults?.[game.id];
+      if (!record) return "Пока пусто";
+      return `${record.bestScore} из ${record.total}`;
+    }
+
+    function totalForGame(game) {
+      if (game.questions_per_run) return game.questions_per_run;
+      return game.mechanic === "pick-two" ? game.rounds.length : game.cards.length;
+    }
+
+    function pickRandomItems(items, count) {
+      const copy = Array.isArray(items) ? [...items] : [];
+      for (let index = copy.length - 1; index > 0; index -= 1) {
+        const swapIndex = Math.floor(Math.random() * (index + 1));
+        [copy[index], copy[swapIndex]] = [copy[swapIndex], copy[index]];
+      }
+      return copy.slice(0, Math.min(count, copy.length));
+    }
+
+    function saveGameResult(game, score, total) {
+      const progress = getProgress();
+      const existing = progress.gameResults?.[game.id];
+      progress.gameResults[game.id] = {
+        title: game.title,
+        bestScore: existing ? Math.max(existing.bestScore, score) : score,
+        lastScore: score,
+        total,
+        playedAt: new Date().toISOString(),
+      };
+      saveProgress(progress);
+    }
+
+    function updateGameShell() {
+      const game = getActiveGame();
+      const segment = getAgeSegmentData() || getDisplayAgeSegment();
+      if (heroCopy) {
+        heroCopy.textContent = formatSingleSentence(game.hero_copy);
+      }
+      if (badgeNode) {
+        badgeNode.textContent = `Игра для режима ${segment ? segment.title : game.preview_title}`;
+      }
+      if (titleNode) {
+        titleNode.textContent = game.title;
+      }
+      if (summaryNode) {
+        summaryNode.textContent = formatSingleSentence(game.summary);
+      }
+      if (focusNode) {
+        focusNode.textContent = formatSingleSentence(game.training_focus);
+      }
+      if (scoreNode) {
+        scoreNode.textContent = getBestGameScore(game);
+      }
+      if (copyNode) {
+        copyNode.textContent = formatSingleSentence(game.hero_copy);
+      }
+      if (howNode) {
+        howNode.textContent = formatSingleSentence(game.how_to_play || game.summary);
+      }
+      if (exampleNode) {
+        exampleNode.textContent = formatSingleSentence(game.example || game.hero_copy);
+      }
+      if (avatarNode && segment) {
+        avatarNode.src = getAgeAvatarUrl(segment);
+        avatarNode.alt = `Аватар режима ${segment.title}`;
+      }
+      previews.forEach((card) => {
+        card.classList.toggle("is-active", card.dataset.gamePreview === game.age_segment);
+      });
+    }
+
+    function renderIdleState() {
+      state.started = false;
+      state.score = 0;
+      state.index = 0;
+      state.selections = [];
+      state.pool = [];
+      state.locked = false;
+      layoutNode.classList.remove("is-playing");
+      cardNode.hidden = false;
+      appNode.hidden = true;
+      appNode.innerHTML = "";
+      updateGameShell();
+    }
+
+    function renderGameResult(game, total) {
+      saveGameResult(game, state.score, total);
+      calculateBadges(getProgress());
+      updateGameShell();
+      layoutNode.classList.add("is-playing");
+      cardNode.hidden = true;
+      appNode.hidden = false;
+
+      const ratio = total ? state.score / total : 0;
+      const summary = ratio >= 0.8 ? game.result_good : ratio >= 0.45 ? game.result_mid : game.result_low;
+
+      appNode.innerHTML = `
+        <article class="story-card game-result-card">
+          <p class="eyebrow">Игра завершена</p>
+          <h2>${state.score} из ${total}</h2>
+          <p>${formatSingleSentence(summary)}</p>
+          <div class="action-row">
+            <button type="button" class="primary-button" id="play-again-button">Сыграть ещё</button>
+            <a href="${game.cta_href}" class="secondary-button">${game.cta_label}</a>
+          </div>
+        </article>
+      `;
+
+      document.getElementById("play-again-button")?.addEventListener("click", () => startGame());
+      trackEvent("game_finished", { gameId: game.id, score: state.score, total });
+    }
+
+    function renderPickTwoRound(game) {
+      const round = state.pool[state.index];
+      const total = state.pool.length;
+      const selectedSet = new Set(state.selections);
+      state.locked = false;
+
+      appNode.innerHTML = `
+        <article class="story-card">
+          <p class="eyebrow">Раунд ${state.index + 1} из ${total}</p>
+          <h2>${round.prompt}</h2>
+          <p class="muted">Выбери ${round.required} вещи, которые правда помогут Лёве</p>
+          <div class="game-option-grid">
+            ${round.cards
+              .map(
+                (card, index) => `
+                  <button type="button" class="game-option-card ${selectedSet.has(index) ? "is-selected" : ""}" data-game-card-index="${index}">
+                    ${card.label}
+                  </button>
+                `,
+              )
+              .join("")}
+          </div>
+          <div class="action-row">
+            <button type="button" class="primary-button" id="check-game-round" ${state.selections.length === round.required ? "" : "disabled"}>Проверить</button>
+          </div>
+          <div id="game-feedback-slot"></div>
+        </article>
+      `;
+
+      appNode.querySelectorAll("[data-game-card-index]").forEach((button) => {
+        button.addEventListener("click", () => {
+          if (state.locked) return;
+          const index = Number(button.dataset.gameCardIndex);
+          if (selectedSet.has(index)) {
+            state.selections = state.selections.filter((item) => item !== index);
+          } else if (state.selections.length < round.required) {
+            state.selections = [...state.selections, index];
+          }
+          renderPickTwoRound(game);
+        });
+      });
+
+      document.getElementById("check-game-round")?.addEventListener("click", () => {
+        if (state.locked) return;
+        state.locked = true;
+        const rightIndexes = round.cards.map((card, index) => (card.correct ? index : null)).filter((value) => value !== null);
+        const isPerfect =
+          state.selections.length === rightIndexes.length &&
+          state.selections.every((item) => rightIndexes.includes(item));
+
+        if (isPerfect) state.score += 1;
+
+        const pickedCards = state.selections.map((index) => round.cards[index].label);
+        const rightCards = rightIndexes.map((index) => round.cards[index].label);
+        const pickedDetails = state.selections
+          .map((index) => round.cards[index])
+          .map((card) => `${card.label} — ${card.reason}`);
+        const wrongPicked = state.selections.filter((index) => !rightIndexes.includes(index)).map((index) => round.cards[index]);
+        const slot = document.getElementById("game-feedback-slot");
+
+        if (slot) {
+          slot.innerHTML = `
+            <article class="scenario-feedback">
+              <strong>${isPerfect ? "Точно" : "Можно лучше"}</strong>
+              <p>${
+                isPerfect
+                  ? "Лёва взял именно то, что помогает в такой истории"
+                  : `Здесь ты промахнулся(ась). Лучше было выбрать: ${rightCards.join(" и ")}`
+              }</p>
+              <p class="scenario-feedback__details">${
+                pickedCards.length
+                  ? `Ты выбрал(а): ${pickedCards.join(" и ")}`
+                  : "Пока ничего не выбрано"
+              }</p>
+              ${
+                pickedDetails.length
+                  ? `<div class="fact-list">${pickedDetails.map((line) => `<div class="fact-line"><span>${line}</span></div>`).join("")}</div>`
+                  : ""
+              }
+              ${
+                wrongPicked.length
+                  ? `<p class="scenario-feedback__details">Лишнее здесь: ${wrongPicked.map((card) => `${card.label} — ${card.reason}`).join("; ")}</p>`
+                  : ""
+              }
+              <div class="action-row">
+                <button type="button" class="primary-button" id="next-game-round">
+                  ${state.index + 1 < total ? "Дальше" : "Смотреть итог"}
+                </button>
+              </div>
+            </article>
+          `;
+        }
+
+        document.getElementById("next-game-round")?.addEventListener("click", () => {
+          state.index += 1;
+          state.selections = [];
+          if (state.index < total) {
+            renderPickTwoRound(game);
+          } else {
+            renderGameResult(game, total);
+          }
+        });
+      });
+    }
+
+    function renderClassifyRound(game) {
+      const card = state.pool[state.index];
+      const total = state.pool.length;
+      state.locked = false;
+
+      appNode.innerHTML = `
+        <article class="story-card">
+          <p class="eyebrow">Раунд ${state.index + 1} из ${total}</p>
+          <h2>${card.label}</h2>
+          <p class="muted">Выбери, к какой полке это относится</p>
+          <div class="game-classify-actions">
+            ${game.categories
+              .map(
+                (category) => `
+                  <button type="button" class="game-classify-button" data-game-category="${category.id}">
+                    ${category.label}
+                  </button>
+                `,
+              )
+              .join("")}
+          </div>
+          <div id="game-feedback-slot"></div>
+        </article>
+      `;
+
+      appNode.querySelectorAll("[data-game-category]").forEach((button) => {
+        button.addEventListener("click", () => {
+          if (state.locked) return;
+          state.locked = true;
+          const pickedCategory = button.dataset.gameCategory;
+          const isCorrect = pickedCategory === card.category;
+          if (isCorrect) state.score += 1;
+
+          const slot = document.getElementById("game-feedback-slot");
+          const correctLabel = game.categories.find((item) => item.id === card.category)?.label || card.category;
+
+          if (slot) {
+            slot.innerHTML = `
+              <article class="scenario-feedback">
+                <strong>${isCorrect ? "Верно" : `Правильная полка: ${correctLabel}`}</strong>
+                <p>${formatSingleSentence(card.reason)}</p>
+                <div class="action-row">
+                  <button type="button" class="primary-button" id="next-game-round">
+                    ${state.index + 1 < total ? "Дальше" : "Смотреть итог"}
+                  </button>
+                </div>
+              </article>
+            `;
+          }
+
+          appNode.querySelectorAll("[data-game-category]").forEach((item) => {
+            item.setAttribute("disabled", "disabled");
+            item.classList.toggle("is-selected", item.dataset.gameCategory === pickedCategory);
+            item.classList.toggle("is-correct", item.dataset.gameCategory === card.category);
+          });
+
+          document.getElementById("next-game-round")?.addEventListener("click", () => {
+            state.index += 1;
+            if (state.index < total) {
+              renderClassifyRound(game);
+            } else {
+              renderGameResult(game, total);
+            }
+          });
+        });
+      });
+    }
+
+    function startGame() {
+      const game = getActiveGame();
+      state.started = true;
+      state.score = 0;
+      state.index = 0;
+      state.selections = [];
+      state.locked = false;
+      state.pool = game.mechanic === "pick-two"
+        ? pickRandomItems(game.rounds, totalForGame(game))
+        : pickRandomItems(game.cards, totalForGame(game));
+      layoutNode.classList.add("is-playing");
+      cardNode.hidden = true;
+      appNode.hidden = false;
+      trackEvent("game_started", { gameId: game.id, ageSegment: game.age_segment });
+
+      if (game.mechanic === "pick-two") {
+        renderPickTwoRound(game);
+        return;
+      }
+      renderClassifyRound(game);
+    }
+
+    startButton.addEventListener("click", startGame);
+    restartButton.addEventListener("click", startGame);
+
+    document.addEventListener("igs:age-changed", () => {
+      updateGameShell();
+      renderIdleState();
+    });
+
+    renderIdleState();
+  }
+
   function updateProfilePage() {
     if (document.body.dataset.page !== "profile") return;
     const authenticated = isAuthenticated();
@@ -979,6 +1363,8 @@
     const savedChecklists = document.getElementById("saved-checklists");
     const ageTitle = document.getElementById("profile-age-title");
     const ageCopy = document.getElementById("profile-age-copy");
+    const gamesTitle = document.getElementById("profile-games-title");
+    const gamesCopy = document.getElementById("profile-games-copy");
     const storageCopy = document.getElementById("profile-storage-copy");
 
     if (progressTitle) {
@@ -1005,9 +1391,13 @@
 
     const badges = calculateBadges(progress);
     if (badgeList) {
-      badgeList.innerHTML = badges.length
-        ? badges.map((badge) => `<span class="badge">${badge}</span>`).join("")
-        : `<div class="empty-state">Пока пусто. Первый бейдж появится после завершения сценария</div>`;
+      if (!authenticated) {
+        badgeList.innerHTML = `<div class="empty-state">Войди в аккаунт, чтобы игровые бейджи сохранялись и были видны в профиле</div>`;
+      } else {
+        badgeList.innerHTML = badges.length
+          ? badges.map((badge) => `<span class="badge">${badge}</span>`).join("")
+          : `<div class="empty-state">Пока пусто. Первый бейдж появится после завершения сценария</div>`;
+      }
     }
 
     const matchedAge = getAgeSegmentData();
@@ -1016,6 +1406,19 @@
     }
     if (ageCopy) {
       ageCopy.textContent = matchedAge ? formatSingleSentence(matchedAge.tone) : "Можно выбрать в настройках доступности на любой странице";
+    }
+
+    const gameResults = Object.values(progress.gameResults || {});
+    const bestGame = authenticated
+      ? gameResults.sort((a, b) => (b.bestScore || 0) - (a.bestScore || 0))[0]
+      : null;
+    if (gamesTitle) {
+      gamesTitle.textContent = authenticated ? (bestGame ? `${bestGame.bestScore} из ${bestGame.total}` : "Пока пусто") : "Войди в аккаунт";
+    }
+    if (gamesCopy) {
+      gamesCopy.textContent = authenticated
+        ? (bestGame ? `${bestGame.title} — лучший результат на сейчас` : "Открой раздел «Игры», чтобы здесь появился лучший результат")
+        : "Без входа игра может запомниться только в этом браузере, но в профиль аккаунта результат не попадёт";
     }
 
     if (savedChecklists) {
@@ -1062,6 +1465,7 @@
     updateGlossaryCards();
     initBasicsModal();
     renderScenarioApp();
+    initGamesMode();
     updateProfilePage();
     document.addEventListener("igs:age-changed", () => {
       updateScenarioCardCopies();
