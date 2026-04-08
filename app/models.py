@@ -1,9 +1,13 @@
+"""Database models for the smart insurance guide."""
+
 from datetime import datetime, UTC
 
 from app.extensions import db
 
 
 class User(db.Model):
+    """Application user with server-side profile and progress state."""
+
     __tablename__ = "users"
 
     id = db.Column(db.Integer, primary_key=True)

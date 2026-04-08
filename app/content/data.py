@@ -1,3 +1,5 @@
+"""Static content for age modes, glossary, basics modules, games, and scenarios."""
+
 AGE_SEGMENTS = [
     {
         "id": "11-13",

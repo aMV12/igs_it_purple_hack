@@ -1,3 +1,5 @@
+"""Flask application factory and route definitions for the IGS hackathon MVP."""
+
 import json
 import os
 import re
@@ -11,6 +13,8 @@ from app.models import User
 
 
 def create_app() -> Flask:
+    """Build and configure the Flask application instance."""
+
     flask_app = Flask(__name__)
     database_url = os.getenv("DATABASE_URL", "").strip()
     if database_url.startswith("postgres://"):
@@ -32,18 +36,24 @@ def create_app() -> Flask:
     scenario_categories = list(dict.fromkeys(scenario["category"] for scenario in SCENARIOS))
 
     def current_user() -> User | None:
+        """Return the currently authenticated user from the session, if any."""
+
         user_id = session.get("user_id")
         if not user_id:
             return None
         return db.session.get(User, user_id)
 
     def is_meaningful_progress(progress: dict) -> bool:
+        """Check whether the provided progress payload contains useful user data."""
+
         if not isinstance(progress, dict):
             return False
         return bool(progress.get("completedScenarios") or progress.get("quizScores") or progress.get("badges") or progress.get("gameResults"))
 
     @flask_app.template_filter("tidy_sentence")
     def tidy_sentence(value: str) -> str:
+        """Trim trailing punctuation for short one-sentence UI strings."""
+
         if not isinstance(value, str):
             return value
         text = value.strip()
@@ -57,6 +67,8 @@ def create_app() -> Flask:
 
     @flask_app.context_processor
     def inject_globals():
+        """Expose shared navigation and age-mode data to all templates."""
+
         return {
             "nav_items": [
                 {"title": "Сценарии", "endpoint": "scenarios"},
@@ -73,6 +85,8 @@ def create_app() -> Flask:
 
     @flask_app.route("/")
     def home():
+        """Render the homepage with featured scenarios and basics preview."""
+
         return render_template(
             "home.html",
             featured_scenario=SCENARIOS[0],
@@ -83,6 +97,8 @@ def create_app() -> Flask:
 
     @flask_app.route("/scenarios")
     def scenarios():
+        """Render the full scenario catalog page."""
+
         return render_template(
             "scenarios.html",
             scenarios=SCENARIOS,
@@ -92,6 +108,8 @@ def create_app() -> Flask:
 
     @flask_app.route("/scenarios/<slug>")
     def scenario_detail(slug: str):
+        """Render a single interactive scenario by its slug."""
+
         scenario = scenario_map.get(slug)
         if not scenario:
             abort(404)
@@ -99,26 +117,38 @@ def create_app() -> Flask:
 
     @flask_app.route("/basics")
     def basics():
+        """Render the basics page with interactive learning modules."""
+
         return render_template("basics.html", basics_modules=BASICS_MODULES, scenarios=SCENARIOS)
 
     @flask_app.route("/glossary")
     def glossary():
+        """Render the glossary page with adaptive term explanations."""
+
         return render_template("glossary.html", glossary=GLOSSARY, scenarios=SCENARIOS)
 
     @flask_app.route("/games")
     def games():
+        """Render the age-adaptive mini-games page."""
+
         return render_template("games.html", game_modes=GAME_MODES, scenarios=SCENARIOS)
 
     @flask_app.route("/profile")
     def profile():
+        """Render the profile and progress dashboard."""
+
         return render_template("profile.html", scenarios=SCENARIOS, basics_modules=BASICS_MODULES)
 
     @flask_app.route("/about")
     def about():
+        """Render the project information and sources page."""
+
         return render_template("about.html", sources=ABOUT_SOURCES, scenarios=SCENARIOS)
 
     @flask_app.route("/auth", methods=["GET", "POST"])
     def auth():
+        """Handle login and registration within a shared auth screen."""
+
         if request.method == "GET":
             return render_template("auth.html", auth_mode=request.args.get("mode", "login"))
 
@@ -149,11 +179,15 @@ def create_app() -> Flask:
 
     @flask_app.post("/logout")
     def logout():
+        """Clear the current session and redirect to the homepage."""
+
         session.clear()
         return redirect(url_for("home"))
 
     @flask_app.route("/api/state", methods=["GET", "POST"])
     def api_state():
+        """Read or update the authenticated user's server-side state snapshot."""
+
         user = current_user()
         if not user:
             if request.method == "GET":
@@ -191,6 +225,8 @@ def create_app() -> Flask:
 
     @flask_app.route("/health")
     def health():
+        """Expose a small healthcheck response for cloud hosting platforms."""
+
         return {
             "status": "ok",
             "service": "igs-smart-guide",
@@ -201,4 +237,5 @@ def create_app() -> Flask:
     return flask_app
 
 
+# The module-level app object is used by Gunicorn and local development entrypoints.
 app = create_app()

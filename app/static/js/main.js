@@ -1,4 +1,8 @@
 (function () {
+  /**
+   * Keys used for client-side persistence. Local storage is intentionally kept
+   * small because most of the app should stay lightweight on free hosting.
+   */
   const storageKeys = {
     age: "igs_age_segment",
     settings: "igs_accessibility_settings",
@@ -16,6 +20,13 @@
 
   let remoteAuthState = getBootstrap().auth || { authenticated: false, username: null };
 
+  /**
+   * Safely parse JSON values coming from localStorage or embedded page data.
+   *
+   * @param {string | null} value
+   * @param {*} fallback
+   * @returns {*}
+   */
   function safeJsonParse(value, fallback) {
     try {
       return value ? JSON.parse(value) : fallback;
@@ -24,6 +35,13 @@
     }
   }
 
+  /**
+   * Remove trailing punctuation from short UI lines where the project uses a
+   * more conversational style without a final dot.
+   *
+   * @param {string} text
+   * @returns {string}
+   */
   function formatSingleSentence(text) {
     if (typeof text !== "string") return text;
     const value = text.trim();
@@ -33,6 +51,12 @@
     return marks.length === 1 ? value.slice(0, -1) : value;
   }
 
+  /**
+   * Remove duplicate checklist lines while keeping the original order.
+   *
+   * @param {string[]} lines
+   * @returns {string[]}
+   */
   function dedupeLines(lines) {
     const seen = new Set();
     return (lines || []).filter((line) => {
@@ -43,6 +67,11 @@
     });
   }
 
+  /**
+   * Read server-provided bootstrap data embedded into the base template.
+   *
+   * @returns {{ageSegments: Array, scenarios: Array, basicsModules: Array, gameModes?: Array, auth: {authenticated: boolean, username: string | null}}}
+   */
   function getBootstrap() {
     return window.APP_BOOTSTRAP || { ageSegments: [], scenarios: [], basicsModules: [], auth: { authenticated: false, username: null } };
   }
@@ -59,6 +88,12 @@
     );
   }
 
+  /**
+   * Normalize progress shape so later UI code can rely on predictable keys.
+   *
+   * @param {Object} progress
+   * @returns {{completedScenarios: Object, quizScores: Object, badges: string[], gameResults: Object}}
+   */
   function normalizeProgress(progress) {
     const value = progress && typeof progress === "object" ? progress : {};
     return {
@@ -77,6 +112,12 @@
     return Boolean(remoteAuthState?.authenticated);
   }
 
+  /**
+   * Persist a partial state payload to the authenticated profile on the server.
+   *
+   * @param {Object} payload
+   * @returns {Promise<void>}
+   */
   async function persistRemoteState(payload) {
     if (!isAuthenticated()) return;
     try {
@@ -91,6 +132,12 @@
     }
   }
 
+  /**
+   * Copy server-side state back into localStorage so the UI can keep using the
+   * same client-side rendering logic for both guests and authenticated users.
+   *
+   * @param {{ageSegment?: string, settings?: Object, progress?: Object, checklists?: Array}} data
+   */
   function hydrateLocalStateFromRemote(data) {
     if (typeof data.ageSegment === "string" && data.ageSegment) {
       localStorage.setItem(storageKeys.age, data.ageSegment);
@@ -106,6 +153,10 @@
     }
   }
 
+  /**
+   * Initialize server-backed state for authenticated users. When a user is not
+   * logged in, the app stays fully local and does not attempt remote syncing.
+   */
   async function initRemoteState() {
     try {
       const response = await fetch("/api/state", { credentials: "same-origin" });
@@ -157,6 +208,9 @@
     void persistRemoteState({ settings });
   }
 
+  /**
+   * Apply local accessibility settings to the current page shell.
+   */
   function applySettings() {
     const settings = getSettings();
     document.documentElement.classList.toggle("is-large-text", settings.largeText);
@@ -272,6 +326,9 @@
     }
   }
 
+  /**
+   * Refresh header and cards after the age mode changes.
+   */
   function applyAgeModeUI() {
     const ageSegment = getAgeSegmentData();
     const displaySegment = getDisplayAgeSegment();
@@ -296,6 +353,9 @@
     });
   }
 
+  /**
+   * Update adaptive copy snippets on pages that react to the age segment.
+   */
   function updateAdaptiveCopy() {
     const ageSegment = getDisplayAgeSegment();
     if (!ageSegment) return;
@@ -328,6 +388,9 @@
     }
   }
 
+  /**
+   * Wire global UI controls shared by all pages.
+   */
   function bindGlobalControls() {
     document.querySelectorAll('[data-action="toggle-font-size"]').forEach((button) => {
       button.addEventListener("click", () => {
@@ -379,6 +442,9 @@
     return;
   }
 
+  /**
+   * Filter scenario cards by search query and category.
+   */
   function initScenarioCatalog() {
     const catalog = document.getElementById("scenario-catalog");
     const search = document.getElementById("scenario-search");
@@ -410,6 +476,9 @@
     search.addEventListener("input", applyFilters);
   }
 
+  /**
+   * Filter glossary cards by the entered term.
+   */
   function initGlossarySearch() {
     const input = document.getElementById("glossary-search");
     const grid = document.getElementById("glossary-grid");
@@ -466,6 +535,9 @@
     });
   }
 
+  /**
+   * Open and render the interactive basics modal for the selected module.
+   */
   function initBasicsModal() {
     const modal = document.getElementById("basics-modal");
     const contentNode = document.getElementById("basics-modal-content");
@@ -608,6 +680,9 @@
     });
   }
 
+  /**
+   * Run the step-by-step scenario flow, result summary and follow-up quiz.
+   */
   function renderScenarioApp() {
     const appNode = document.getElementById("scenario-app");
     const startButton = document.getElementById("start-scenario");
@@ -993,6 +1068,10 @@
     document.addEventListener("igs:age-changed", updateScenarioIntroCard);
   }
 
+  /**
+   * Run the age-adaptive mini-game page. All logic stays client-side to keep
+   * hosting requirements minimal on Render free tier.
+   */
   function initGamesMode() {
     if (document.body.dataset.page !== "games") return;
 
@@ -1350,6 +1429,10 @@
     renderIdleState();
   }
 
+  /**
+   * Update the profile dashboard using either authenticated remote state or
+   * guest-only local hints, depending on the current auth mode.
+   */
   function updateProfilePage() {
     if (document.body.dataset.page !== "profile") return;
     const authenticated = isAuthenticated();
@@ -1452,6 +1535,10 @@
     }
   }
 
+  /**
+   * Boot the application after page bootstrap data and remote profile state
+   * become available.
+   */
   async function initApp() {
     await initRemoteState();
     applySettings();
